@@ -185,7 +185,7 @@ class bknqgis:
         for layer in layers:
             layer_list.append(layer.name())
         self.dlg.comboBox.addItems(layer_list)
-        
+
         file_path = "/Users/Ziqi/Desktop/map.html"
         self.dlg.preview.load(QUrl.fromLocalFile(file_path))
 
@@ -198,8 +198,11 @@ class bknqgis:
         if result:
             selectedLayerIndex = self.dlg.comboBox.currentIndex()
             selectedLayer = layers[selectedLayerIndex]
-
-            qgis.bkExport(selectedLayer)
+            settings = {}
+            selectedField = "CRIME"
+            settings["layer"] = selectedLayer
+            settings["field"] = selectedField
+            qgis.bkExport(settings)
             #show(p)
             self.dlg.preview.setUrl(QUrl('/Users/Ziqi/Desktop/map.html'))
             # Do something useful here - delete the line containing pass and

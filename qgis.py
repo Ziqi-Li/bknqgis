@@ -11,11 +11,12 @@ from bokeh.models import (
     LogColorMapper
 )
 from bokeh.io import output_file, show
-from bokeh.models import GeoJSONDataSource
+from bokeh.models import GeoJSONDataSource,CategoricalColorMapper
 from bokeh.plotting import figure
 from bokeh.sampledata.sample_geojson import geojson
 from bokeh.resources import CDN
 from bokeh.embed import file_html
+from bokeh.charts.attributes import cat, color
 
 def gpd_bokeh(df):
     """Convert geometries from geopandas to bokeh format"""
@@ -50,8 +51,10 @@ def gpd_bokeh(df):
 
     return lons,lats
 
-def bkExport(layer):
+def bkExport(settings):
 #layer = iface.legendInterface().layers()[0]
+    layer = settings["layer"]
+    field = settings["field"]
     gdfList = []
     for feature in layer.getFeatures():
         #print feature.geometry().exportToGeoJSON(17)
@@ -60,6 +63,8 @@ def bkExport(layer):
         featJson = json.loads(featJsonString)
         df = {}
         df["geometry"] = shape(featJson)
+        df["data"] = feature[field]
+        df["class"] = -1
         gdf = gpd.GeoDataFrame([df])
         gdfList.append(gdf)
 
@@ -68,18 +73,63 @@ def bkExport(layer):
     print gdf2
 
     lons, lats = gpd_bokeh(gdf2)
+    data = list(gdf2["data"])
+
+    #map settings
+    #width = int(layer.extent().width()*20)
+    #height = int(layer.extent().height()*20)
+    width = 1000
+    height = 600
+    renderer = layer.rendererV2()
+    if renderer.type() == 'singleSymbol':
+        print "singleSymbol"
+        color = renderer.symbol().color().name()
+        color_mapper = CategoricalColorMapper(factors=[-1], palette=[color])
+    elif renderer.type() == 'categorizedSymbol':
+        print "categorizedSymbol"
+
+    elif renderer.type() == 'graduatedSymbol':
+        print "graduatedSymbol"
+        ranges = renderer.ranges()
+
+        for i in xrange(len(ranges)):
+            print ranges[i].lowerValue()
+            print ranges[i].upperValue()
+            gdf2["class"][(gdf2["data"] >= ranges[i].lowerValue()) & (gdf2["data"] <= ranges[i].upperValue())] = i
+
+        print gdf2["class"]
+        colorPalette = [symbol.color().name() for symbol in renderer.symbols()]
+        color_mapper = CategoricalColorMapper(factors=sorted(list(gdf2["class"].unique())), palette=colorPalette)
+        print sorted(list(gdf2["class"].unique())),colorPalette
+        print color_mapper
+    else:
+        print "otherSymbols"
+    TOOLS = "pan,wheel_zoom,box_zoom,reset,hover,save"
+
+    colorClass  = list(gdf2["class"])
     source = ColumnDataSource(data=dict(
         x=lons,
-        y=lats
+        y=lats,
+        data = data,
+        category = colorClass
     ))
-
-    TOOLS = "pan,wheel_zoom,box_zoom,reset,hover,save"
-    p = figure(plot_width=600, plot_height=500,
-        title="Texas Unemployment, 2009", tools=TOOLS,
+    #plot_width=width, plot_height=height,
+    p = figure(
+        title="Texas Unemployment, 2009", tools=TOOLS,plot_width=width, plot_height=height,
         x_axis_location=None, y_axis_location=None
     )
     p.grid.grid_line_color = None
-    p.patches('x', 'y', source=source, fill_alpha=0.7, line_color="white", line_width=0.5)
+    p.patches('x', 'y', source=source, fill_alpha=0.7, line_color="black", line_width=0.5,fill_color = {'field': 'category', 'transform': color_mapper},)
+
+
+    hover = p.select_one(HoverTool)
+    hover.point_policy = "follow_mouse"
+    hover.tooltips = [
+        (field, "@data")
+        #("(Long, Lat)", "($x, $y)"),
+    ]
+
+
     html = file_html(p, CDN, "my plot")
 
     with open("/Users/Ziqi/Desktop/map.html", "w") as my_file:
