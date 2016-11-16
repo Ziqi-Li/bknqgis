@@ -75,10 +75,18 @@ class bknqgis:
         self.dlg.lineEdit.clear()
         self.dlg.outputBTN.clicked.connect(self.select_output_file)
         self.dlg.previewBTN.clicked.connect(self.preview)
-        self.dlg.comboBoxLayer.activated.connect( self.onLayerChange )
+        self.dlg.comboBoxLayer.activated.connect(self.onLayerChange)
+        self.dlg.lineEditWidth.textEdited.connect(self.onWidthChange)
+        self.dlg.lineEditHeight.textEdited.connect(self.onHeightChange)
+        self.dlg.lineEditWidth.setValidator(QIntValidator())
+        self.dlg.lineEditHeight.setValidator(QIntValidator())
+        self.dlg.lineEditWidth.setMaxLength(4)
+        self.dlg.lineEditHeight.setMaxLength(4)
         self.dlg.progressBar.setValue(0)
         self.dlg.progressBar.setMinimum(0)
         self.dlg.progressBar.setMaximum(100)
+        self.dlg.ratioCheckBox.setChecked(True)
+        self.dlg.ratioCheckBox.stateChanged.connect(self.onWidthChange)
         self.dlg.lineEdit.setText('/Users/Ziqi/Desktop/bokeh-map.html')
 
     # noinspection PyMethodMayBeStatic
@@ -166,6 +174,8 @@ class bknqgis:
         settings["layer"] = selectedLayer
         settings["field"] = self.dlg.valueFieldText.text()
         settings["outputFile"] = self.dlg.lineEdit.text()
+        settings["width"] = int(self.dlg.lineEditWidth.text())
+        settings["height"] = int(self.dlg.lineEditHeight.text())
         settings["title"] = "Bokeh Test Map"
         print selectedLayer.name()
         print selectedField.name()
@@ -184,6 +194,34 @@ class bknqgis:
             self.dlg.comboBoxField.addItem( field.name(), field ) # lists layer fields
         renderer = layer.rendererV2()
         self.dlg.valueFieldText.setText(renderer.usedAttributes()[0])
+        ratio = layer.extent().width()/layer.extent().height()
+        print (ratio)
+        self.dlg.lineEditHeight.setText("1000")
+        self.dlg.lineEditWidth.setText(str(int(int(self.dlg.lineEditHeight.text())*ratio)))
+
+    def onWidthChange(self):
+        if self.dlg.ratioCheckBox.isChecked():
+            print ("checked")
+            selectedLayerIndex = self.dlg.comboBoxLayer.currentIndex()
+            selectedLayer = self.dlg.comboBoxLayer.itemData(selectedLayerIndex)
+            ratio = selectedLayer.extent().width()/selectedLayer.extent().height()
+            if self.dlg.lineEditWidth.text():
+                self.dlg.lineEditHeight.setText(str(int(int(self.dlg.lineEditWidth.text())/ratio)))
+            else:
+                self.dlg.lineEditHeight.setText("")
+            print (self.dlg.lineEditHeight.text(),self.dlg.lineEditWidth.text())
+
+    def onHeightChange(self):
+        if self.dlg.ratioCheckBox.isChecked():
+            print ("checked")
+            selectedLayerIndex = self.dlg.comboBoxLayer.currentIndex()
+            selectedLayer = self.dlg.comboBoxLayer.itemData(selectedLayerIndex)
+            ratio = selectedLayer.extent().width()/selectedLayer.extent().height()
+            if self.dlg.lineEditHeight.text():
+                self.dlg.lineEditWidth.setText(str(int(int(self.dlg.lineEditHeight.text())*ratio)))
+            else:
+                self.dlg.lineEditWidth.setText("")
+            print (self.dlg.lineEditHeight.text(),self.dlg.lineEditWidth.text())
 
     def gpd_bokeh(self,df):
         """Convert geometries from geopandas to bokeh format"""
@@ -243,10 +281,10 @@ class bknqgis:
         data = list(gdf2["data"])
 
         #map settings
-        ratio = layer.extent().width()/layer.extent().height()
+        #ratio = layer.extent().width()/layer.extent().height()
         #height = int(layer.extent().height()*20)
-        height = 600
-        width = int(height*ratio)
+        height = settings["height"]
+        width = settings["width"]
         renderer = layer.rendererV2()
         if renderer.type() == 'singleSymbol':
             print "singleSymbol"
