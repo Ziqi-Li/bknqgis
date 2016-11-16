@@ -132,6 +132,6 @@ def bkExport(settings):
 
     html = file_html(p, CDN, "my plot")
 
-    with open("/Users/Ziqi/Desktop/map.html", "w") as my_file:
+    with open(settings["outputFile"], "w") as my_file:
         my_file.write(html)
     print ("exported")
