@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>511</width>
+    <width>550</width>
     <height>486</height>
    </rect>
   </property>
@@ -16,8 +16,8 @@
   <widget class="QDialogButtonBox" name="button_box">
    <property name="geometry">
     <rect>
-     <x>330</x>
-     <y>450</y>
+     <x>370</x>
+     <y>440</y>
      <width>164</width>
      <height>32</height>
     </rect>
@@ -29,24 +29,11 @@
     <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
    </property>
   </widget>
-  <widget class="QProgressBar" name="progressBar">
-   <property name="geometry">
-    <rect>
-     <x>140</x>
-     <y>360</y>
-     <width>231</width>
-     <height>51</height>
-    </rect>
-   </property>
-   <property name="value">
-    <number>24</number>
-   </property>
-  </widget>
   <widget class="QPushButton" name="previewBTN">
    <property name="geometry">
     <rect>
-     <x>210</x>
-     <y>410</y>
+     <x>20</x>
+     <y>440</y>
      <width>110</width>
      <height>32</height>
     </rect>
@@ -60,8 +47,8 @@
     <rect>
      <x>20</x>
      <y>20</y>
-     <width>471</width>
-     <height>331</height>
+     <width>508</width>
+     <height>391</height>
     </rect>
    </property>
    <layout class="QGridLayout" name="gridLayout">
@@ -89,27 +76,18 @@
     <item row="0" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
-       <widget class="QLabel" name="label">
-        <property name="text">
-         <string>Select Layer</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <spacer name="horizontalSpacer_2">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item>
-       <widget class="QComboBox" name="comboBoxLayer"/>
+       <layout class="QHBoxLayout" name="horizontalLayout_9">
+        <item>
+         <widget class="QLabel" name="label_7">
+          <property name="text">
+           <string>Select layer</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="comboBoxLayer"/>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>
@@ -118,12 +96,12 @@
       <item>
        <widget class="QLabel" name="label_4">
         <property name="text">
-         <string>Value Field</string>
+         <string>Value field</string>
         </property>
        </widget>
       </item>
       <item>
-       <spacer name="horizontalSpacer">
+       <spacer name="horizontalSpacer_2">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
@@ -149,35 +127,45 @@
       <item>
        <widget class="QLabel" name="label_2">
         <property name="text">
-         <string>Select Field</string>
+         <string>Select fields in hover tooltip</string>
         </property>
        </widget>
-      </item>
-      <item>
-       <widget class="QComboBox" name="comboBoxField"/>
       </item>
      </layout>
     </item>
-    <item row="5" column="0">
+    <item row="7" column="0">
+     <widget class="QLabel" name="label_8">
+      <property name="text">
+       <string>Select export mode</string>
+      </property>
+     </widget>
+    </item>
+    <item row="8" column="0">
      <layout class="QHBoxLayout" name="horizontalLayout_5">
       <item>
-       <widget class="QRadioButton" name="JupyterRB">
+       <widget class="QRadioButton" name="htmlRB">
         <property name="text">
-         <string>Jupyter Notebook</string>
+         <string>Standalone HTML</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QRadioButton" name="EmbedRB">
+       <widget class="QRadioButton" name="embedRB">
         <property name="text">
          <string>Embeddable scripts</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QRadioButton" name="HTMLRB">
+       <widget class="QRadioButton" name="jupyterRB">
         <property name="text">
-         <string>Standalone HTML</string>
+         <string>Jupyter Notebook</string>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
         </property>
        </widget>
       </item>
@@ -210,9 +198,60 @@
         <property name="text">
          <string>Keep ratio</string>
         </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
        </widget>
       </item>
      </layout>
+    </item>
+    <item row="5" column="0">
+     <widget class="QTableWidget" name="tableWidget"/>
+    </item>
+    <item row="6" column="0">
+     <layout class="QHBoxLayout" name="horizontalLayout_6">
+      <item>
+       <widget class="QToolButton" name="addRowBTN">
+        <property name="text">
+         <string>+</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QToolButton" name="delRowBTN">
+        <property name="text">
+         <string>-</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QToolButton" name="delAllBTN">
+        <property name="text">
+         <string>Delete all</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item row="9" column="0">
+     <widget class="QProgressBar" name="progressBar">
+      <property name="value">
+       <number>24</number>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>

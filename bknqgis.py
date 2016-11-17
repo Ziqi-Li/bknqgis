@@ -72,22 +72,35 @@ class bknqgis:
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar(u'bknqgis')
         self.toolbar.setObjectName(u'bknqgis')
+        #Export path
         self.dlg.lineEdit.clear()
+        self.dlg.lineEdit.setText('/Users/Ziqi/Desktop/bokeh-map.html')
         self.dlg.outputBTN.clicked.connect(self.select_output_file)
         self.dlg.previewBTN.clicked.connect(self.preview)
         self.dlg.comboBoxLayer.activated.connect(self.onLayerChange)
+        #Size Fields
         self.dlg.lineEditWidth.textEdited.connect(self.onWidthChange)
         self.dlg.lineEditHeight.textEdited.connect(self.onHeightChange)
         self.dlg.lineEditWidth.setValidator(QIntValidator())
         self.dlg.lineEditHeight.setValidator(QIntValidator())
         self.dlg.lineEditWidth.setMaxLength(4)
         self.dlg.lineEditHeight.setMaxLength(4)
+        #ProgressBar
         self.dlg.progressBar.setValue(0)
         self.dlg.progressBar.setMinimum(0)
         self.dlg.progressBar.setMaximum(100)
+        #
         self.dlg.ratioCheckBox.setChecked(True)
-        self.dlg.ratioCheckBox.stateChanged.connect(self.onWidthChange)
-        self.dlg.lineEdit.setText('/Users/Ziqi/Desktop/bokeh-map.html')
+        #Table
+        self.dlg.delAllBTN.clicked.connect(self.deleteAllTable)
+        self.dlg.addRowBTN.clicked.connect(self.addRowTable)
+        self.dlg.delRowBTN.clicked.connect(self.delRowTable)
+        self.dlg.tableWidget.setColumnCount(2)
+        self.dlg.tableWidget.setHorizontalHeaderLabels(["Fields","Labels"])
+        self.dlg.tableWidget.setColumnWidth(0, 150)
+        header = self.dlg.tableWidget.horizontalHeader()
+        header.setStretchLastSection(True)
+
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -143,6 +156,7 @@ class bknqgis:
         """Run method that performs all the real work"""
         #
         self.dlg.comboBoxLayer.clear()
+        self.onLayerChange
         #self.dlg.progressBar.setValue(0)
         layers = self.iface.legendInterface().layers()
         #layer_list = []
@@ -150,6 +164,7 @@ class bknqgis:
             self.dlg.comboBoxLayer.addItem(layer.name(), layer)
         #self.dlg.comboBoxLayer.addItems(layer_list)
         selectedLayerIndex = self.dlg.comboBoxLayer.currentIndex()
+        self.onLayerChange(selectedLayerIndex)
         selectedLayer = self.dlg.comboBoxLayer.itemData(selectedLayerIndex)
         # show the dialog
         self.dlg.show()
@@ -163,12 +178,31 @@ class bknqgis:
         filename = QFileDialog.getSaveFileName(self.dlg, "Select output file ","", '*.html')
         self.dlg.lineEdit.setText(filename)
 
+    def deleteAllTable(self):
+        self.dlg.tableWidget.setRowCount(0)
+
+    def addRowTable(self):
+        rowPosition = self.dlg.tableWidget.rowCount()
+        self.dlg.tableWidget.insertRow(rowPosition)
+        selectedLayerIndex = self.dlg.comboBoxLayer.currentIndex()
+        selectedLayer = self.dlg.comboBoxLayer.itemData(selectedLayerIndex)
+        newComboBox = QComboBox()
+        for field in selectedLayer.pendingFields():
+            newComboBox.addItem(field.name(), field) # lists layer fields
+        label = QTableWidgetItem()
+        self.dlg.tableWidget.setCellWidget(rowPosition, 0, newComboBox)
+        self.dlg.tableWidget.setItem(rowPosition, 1, label)
+
+    def delRowTable(self):
+        rowPosition = self.dlg.tableWidget.rowCount()
+        self.dlg.tableWidget.setRowCount(rowPosition - 1)
+
     def preview(self):
         file_path = "/Users/Ziqi/Desktop/map.html"
         selectedLayerIndex = self.dlg.comboBoxLayer.currentIndex()
         selectedLayer = self.dlg.comboBoxLayer.itemData(selectedLayerIndex)
-        selectedFieldIndex = self.dlg.comboBoxField.currentIndex()
-        selectedField = self.dlg.comboBoxField.itemData(selectedFieldIndex)
+        #selectedFieldIndex = self.dlg.comboBoxField.currentIndex()
+        #selectedField = self.dlg.comboBoxField.itemData(selectedFieldIndex)
 
         settings = {}
         settings["layer"] = selectedLayer
@@ -177,27 +211,27 @@ class bknqgis:
         settings["width"] = int(self.dlg.lineEditWidth.text())
         settings["height"] = int(self.dlg.lineEditHeight.text())
         settings["title"] = "Bokeh Test Map"
-        print selectedLayer.name()
-        print selectedField.name()
+        settings["hoverFields"] = []
+        for row in xrange(self.dlg.tableWidget.rowCount()):
+            item0 = self.dlg.tableWidget.cellWidget(row, 0)
+            item1 = self.dlg.tableWidget.item(row, 1)
+            settings["hoverFields"].append([str(item0.itemData(item0.currentIndex()).name()),str(item1.text())])
+
         self.bkExport(settings)
+
         messageBox = QMessageBox()
         messageBox.setWindowTitle( "Success" )
         messageBox.setText( "HTML Exported Successful")
         messageBox.exec_()
-        #QgsMessageLog.logMessage("HTML Page Exported")
-        print settings["outputFile"]
 
     def onLayerChange(self, index):
-        self.dlg.comboBoxField.clear() # clears the combobox
-        layer = self.dlg.comboBoxLayer.itemData( index ) # gets selected layer
-        for field in layer.pendingFields():
-            self.dlg.comboBoxField.addItem( field.name(), field ) # lists layer fields
+        self.deleteAllTable()
+        layer = self.dlg.comboBoxLayer.itemData(index) # gets selected layer
         renderer = layer.rendererV2()
         self.dlg.valueFieldText.setText(renderer.usedAttributes()[0])
         ratio = layer.extent().width()/layer.extent().height()
-        print (ratio)
-        self.dlg.lineEditHeight.setText("1000")
-        self.dlg.lineEditWidth.setText(str(int(int(self.dlg.lineEditHeight.text())*ratio)))
+        self.dlg.lineEditWidth.setText("800")
+        self.dlg.lineEditHeight.setText(str(int(int(self.dlg.lineEditWidth.text())/ratio)))
 
     def onWidthChange(self):
         if self.dlg.ratioCheckBox.isChecked():
@@ -213,7 +247,6 @@ class bknqgis:
 
     def onHeightChange(self):
         if self.dlg.ratioCheckBox.isChecked():
-            print ("checked")
             selectedLayerIndex = self.dlg.comboBoxLayer.currentIndex()
             selectedLayer = self.dlg.comboBoxLayer.itemData(selectedLayerIndex)
             ratio = selectedLayer.extent().width()/selectedLayer.extent().height()
@@ -262,9 +295,7 @@ class bknqgis:
         total = float(layer.featureCount())
         counter = 0
         for feature in layer.getFeatures():
-            #print feature.geometry().exportToGeoJSON(17)
             counter = counter+1
-            print counter
             self.dlg.progressBar.setValue(counter/total*100)
             featJsonString = feature.geometry().geometry().asJSON(17)
             featJson = json.loads(featJsonString)
@@ -272,6 +303,8 @@ class bknqgis:
             df["geometry"] = shape(featJson)
             df["data"] = feature[field]
             df["class"] = -1
+            for hField in settings["hoverFields"]:
+                df[hField[0]] = feature[hField[0]]
             gdf = gpd.GeoDataFrame([df])
             gdfList.append(gdf)
 
@@ -279,7 +312,6 @@ class bknqgis:
 
         lons, lats = self.gpd_bokeh(gdf2)
         data = list(gdf2["data"])
-
         #map settings
         #ratio = layer.extent().width()/layer.extent().height()
         #height = int(layer.extent().height()*20)
@@ -292,11 +324,15 @@ class bknqgis:
             color_mapper = CategoricalColorMapper(factors=[-1], palette=[color])
         elif renderer.type() == 'categorizedSymbol':
             print "categorizedSymbol"
-
+            categories = renderer.categories()
+            for i in xrange(len(categories)):
+                if categories[i].value():
+                    gdf2["class"][(gdf2["data"] == float(categories[i].value()))] = i
+            colorPalette = [symbol.color().name() for symbol in renderer.symbols()]
+            color_mapper = CategoricalColorMapper(factors=sorted(list(gdf2["class"].unique())), palette=colorPalette)
         elif renderer.type() == 'graduatedSymbol':
             print "graduatedSymbol"
             ranges = renderer.ranges()
-
             for i in xrange(len(ranges)):
                 print ranges[i].lowerValue()
                 print ranges[i].upperValue()
@@ -315,6 +351,9 @@ class bknqgis:
             data = data,
             category = colorClass
         ))
+        for hField in settings["hoverFields"]:
+            source.add(gdf2[hField[0]],name=hField[0])
+
         #plot_width=width, plot_height=height,
         p = figure(
             title=settings["title"], tools=TOOLS,plot_width=width, plot_height=height,
@@ -324,15 +363,22 @@ class bknqgis:
         p.patches('x', 'y', source=source, fill_alpha=1, line_color="black", line_width=0.5,fill_color = {'field': 'category', 'transform': color_mapper},)
 
 
-        hover = p.select_one(HoverTool)
-        hover.point_policy = "follow_mouse"
-        hover.tooltips = [
-            (field, "@data")
-            #("(Long, Lat)", "($x, $y)"),
-        ]
-
-
-        html = file_html(p, CDN, "my plot")
-        with open(settings["outputFile"], "w") as my_file:
-            my_file.write(html)
-        print ("exported")
+        if settings["hoverFields"]:
+            hover = p.select_one(HoverTool)
+            hover.point_policy = "follow_mouse"
+            hover.tooltips = [
+                #(field, "@data")
+                #("(Long, Lat)", "($x, $y)"),
+            ]
+            for hField in settings["hoverFields"]:
+                temp = "@"+hField[0]
+                hover.tooltips.append((hField[1],temp))
+        if self.dlg.htmlRB.isChecked:
+            print ("HTML")
+            html = file_html(p, CDN, "my plot")
+            with open(settings["outputFile"], "w") as my_file:
+                my_file.write(html)
+        elif self.dlg.embedRB.isChecked:
+            print ("Embbed")
+        elif self.dlg.jupyterRB.isChecked:
+            print ("Jupyter Notebook")
