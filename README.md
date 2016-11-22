@@ -22,8 +22,8 @@ or
 or
 /Users/$USERNAME/.qgis/python/plugins
 ```
-```
 **Windows:**
+```
 C:\Program Files\QGIS\python\plugins
 or
 C:\Documents and Settings\$USERNAME\.qgis\python\plugins
