@@ -30,15 +30,15 @@ import os.path
 import numpy as np
 import geopandas as gpd
 import pandas as pd
-import shapely as shp
+#import shapely as shp
 from shapely.geometry import shape
 import json
 from bokeh.io import output_file, show
-from bokeh.models import ColumnDataSource,GeoJSONDataSource,CategoricalColorMapper,HoverTool
+from bokeh.models import ColumnDataSource,GeoJSONDataSource,CategoricalColorMapper,HoverTool,GMapPlot, GMapOptions
 from bokeh.plotting import figure
 from bokeh.sampledata.sample_geojson import geojson
 from bokeh.resources import CDN, INLINE
-from bokeh.embed import file_html
+from bokeh.embed import file_html,notebook_div,components
 from bokeh.charts.attributes import cat, color
 
 
@@ -89,7 +89,6 @@ class bknqgis:
         self.dlg.progressBar.setValue(0)
         self.dlg.progressBar.setMinimum(0)
         self.dlg.progressBar.setMaximum(100)
-        #
         self.dlg.ratioCheckBox.setChecked(True)
         #Table
         self.dlg.delAllBTN.clicked.connect(self.deleteAllTable)
@@ -100,7 +99,11 @@ class bknqgis:
         self.dlg.tableWidget.setColumnWidth(0, 150)
         header = self.dlg.tableWidget.horizontalHeader()
         header.setStretchLastSection(True)
-
+        self.dlg.htmlRB.setChecked(True)
+        '''
+        self.dlg.htmlRB.clicked.connect(self.onHtmlRBClicked)
+        self.dlg.jupyterRB.clicked.connect(self.onjupyterRBClicked)
+        '''
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -161,7 +164,8 @@ class bknqgis:
         layers = self.iface.legendInterface().layers()
         #layer_list = []
         for layer in layers:
-            self.dlg.comboBoxLayer.addItem(layer.name(), layer)
+            if layer.geometryType() == 2:
+                self.dlg.comboBoxLayer.addItem(layer.name(), layer)
         #self.dlg.comboBoxLayer.addItems(layer_list)
         selectedLayerIndex = self.dlg.comboBoxLayer.currentIndex()
         self.onLayerChange(selectedLayerIndex)
@@ -228,7 +232,10 @@ class bknqgis:
         self.deleteAllTable()
         layer = self.dlg.comboBoxLayer.itemData(index) # gets selected layer
         renderer = layer.rendererV2()
-        self.dlg.valueFieldText.setText(renderer.usedAttributes()[0])
+        if renderer.usedAttributes():
+            self.dlg.valueFieldText.setText(renderer.usedAttributes()[0])
+        else:
+            self.dlg.valueFieldText.setText("")
         ratio = layer.extent().width()/layer.extent().height()
         self.dlg.lineEditWidth.setText("800")
         self.dlg.lineEditHeight.setText(str(int(int(self.dlg.lineEditWidth.text())/ratio)))
@@ -255,6 +262,15 @@ class bknqgis:
             else:
                 self.dlg.lineEditWidth.setText("")
             print (self.dlg.lineEditHeight.text(),self.dlg.lineEditWidth.text())
+
+    def onHtmlRBClicked(self):
+        self.dlg.htmlRB.setChecked(True)
+        self.dlg.jupyterRB.setChecked(False)
+        print "htmlClicked"
+    def onjupyterRBClicked(self):
+        self.dlg.htmlRB.setChecked(False)
+        self.dlg.jupyterRB.setChecked(True)
+        print "Jupyter"
 
     def gpd_bokeh(self,df):
         """Convert geometries from geopandas to bokeh format"""
@@ -295,13 +311,16 @@ class bknqgis:
         total = float(layer.featureCount())
         counter = 0
         for feature in layer.getFeatures():
-            counter = counter+1
+            counter = counter + 1
             self.dlg.progressBar.setValue(counter/total*100)
             featJsonString = feature.geometry().geometry().asJSON(17)
             featJson = json.loads(featJsonString)
             df = {}
             df["geometry"] = shape(featJson)
-            df["data"] = feature[field]
+            if field:
+                df["data"] = feature[field]
+            else:
+                df["data"] = 0
             df["class"] = -1
             for hField in settings["hoverFields"]:
                 df[hField[0]] = feature[hField[0]]
@@ -327,17 +346,13 @@ class bknqgis:
             categories = renderer.categories()
             for i in xrange(len(categories)):
                 if categories[i].value():
-                    gdf2["class"][(gdf2["data"] == float(categories[i].value()))] = i
+                    gdf2["class"][(gdf2["data"] == categories[i].value())] = i
             colorPalette = [symbol.color().name() for symbol in renderer.symbols()]
             color_mapper = CategoricalColorMapper(factors=sorted(list(gdf2["class"].unique())), palette=colorPalette)
         elif renderer.type() == 'graduatedSymbol':
             print "graduatedSymbol"
             ranges = renderer.ranges()
-            for i in xrange(len(ranges)):
-                print ranges[i].lowerValue()
-                print ranges[i].upperValue()
-                gdf2["class"][(gdf2["data"] >= ranges[i].lowerValue()) & (gdf2["data"] <= ranges[i].upperValue())] = i
-
+            gdf2["class"] = map(renderer.legendKeyForValue,gdf2["data"])
             colorPalette = [symbol.color().name() for symbol in renderer.symbols()]
             color_mapper = CategoricalColorMapper(factors=sorted(list(gdf2["class"].unique())), palette=colorPalette)
         else:
@@ -373,12 +388,17 @@ class bknqgis:
             for hField in settings["hoverFields"]:
                 temp = "@"+hField[0]
                 hover.tooltips.append((hField[1],temp))
-        if self.dlg.htmlRB.isChecked:
+
+        if self.dlg.htmlRB.isChecked():
             print ("HTML")
             html = file_html(p, CDN, "my plot")
-            with open(settings["outputFile"], "w") as my_file:
-                my_file.write(html)
-        elif self.dlg.embedRB.isChecked:
+            with open(settings["outputFile"], "w") as my_html:
+                my_html.write(html)
+        elif self.dlg.embedRB.isChecked():
             print ("Embbed")
-        elif self.dlg.jupyterRB.isChecked:
+            script, div = components(p)
+        elif self.dlg.jupyterRB.isChecked():
             print ("Jupyter Notebook")
+            div = notebook_div(p)
+            with open(settings["outputFile"], "w") as my_div:
+                my_div.write(div)
