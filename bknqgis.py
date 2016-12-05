@@ -30,22 +30,23 @@ import os.path
 import numpy as np
 import geopandas as gpd
 import pandas as pd
-#import shapely as shp
 from shapely.geometry import shape
 import json
 from bokeh.io import output_file, show
-from bokeh.models import ColumnDataSource,GeoJSONDataSource,CategoricalColorMapper,HoverTool,GMapPlot, GMapOptions
+from bokeh.models import ColumnDataSource,GeoJSONDataSource,CategoricalColorMapper,HoverTool,PanTool, WheelZoomTool, BoxSelectTool,GMapPlot, GMapOptions,DataRange1d
 from bokeh.plotting import figure
 from bokeh.sampledata.sample_geojson import geojson
 from bokeh.resources import CDN, INLINE
 from bokeh.embed import file_html,notebook_div,components
 from bokeh.charts.attributes import cat, color
+from bokeh.models.glyphs import Patches, Line, Circle
 
 
 class bknqgis:
     """QGIS Plugin Implementation."""
 
     def __init__(self, iface):
+        self.settings = {}
         # Save reference to the QGIS interface
         self.iface = iface
         # initialize plugin directory
@@ -72,6 +73,32 @@ class bknqgis:
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar(u'bknqgis')
         self.toolbar.setObjectName(u'bknqgis')
+        #
+        self.dlg.lineEditGAPI.hide()
+        self.dlg.lineEditZoom.hide()
+        self.dlg.comboBoxMapType.hide()
+        self.dlg.labelZoom.hide()
+        self.dlg.labelMapType.hide()
+        self.dlg.labelAPI.hide()
+        self.dlg.GoogleCheckBox.stateChanged.connect(self.GoogleChecked)
+        self.dlg.alphaSlider.valueChanged.connect(self.alphaSliderChange)
+        self.dlg.lineEditAlpha.setText("0")
+        self.dlg.lineEditAlpha.textEdited.connect(self.alphaTextChange)
+        self.dlg.lineEditAlpha.setValidator(QIntValidator())
+        self.dlg.lineEditZoom.setValidator(QIntValidator())
+        self.dlg.lineEditPlotFrameWidth.setValidator(QIntValidator())
+        self.dlg.leftMargin.setValidator(QIntValidator())
+        self.dlg.rightMargin.setValidator(QIntValidator())
+        self.dlg.topMargin.setValidator(QIntValidator())
+        self.dlg.botMargin.setValidator(QIntValidator())
+        self.dlg.radioButtonCDN.setChecked(True)
+        self.dlg.comboBoxMapType.addItems(["roadmap", "satellite", "hybrid","terrain"])
+        self.dlg.comboBoxToolPosition.addItems(["none","above","below","left","right"])
+        self.dlg.comboBoxSizingMode.addItems(["fixed", "stretch_both", "scale_width", "scale_height", "scale_both"])
+        self.dlg.lineEditZoom.setText("5")
+        self.dlg.lineEditOutlineWidth.setText("0.5")
+        #self.dlg.lineEditGAPI.setText("AIzaSyBlVKPpKGaWkkrBgn3Di7mZ29ZYxmnHPcY")
+
         #Export path
         self.dlg.lineEdit.clear()
         self.dlg.lineEdit.setText('/Users/Ziqi/Desktop/bokeh-map.html')
@@ -99,11 +126,18 @@ class bknqgis:
         self.dlg.tableWidget.setColumnWidth(0, 150)
         header = self.dlg.tableWidget.horizontalHeader()
         header.setStretchLastSection(True)
-        self.dlg.htmlRB.setChecked(True)
-        '''
-        self.dlg.htmlRB.clicked.connect(self.onHtmlRBClicked)
-        self.dlg.jupyterRB.clicked.connect(self.onjupyterRBClicked)
-        '''
+        #
+        self.dlg.pushButtonBKBorderColor.clicked.connect(self.color_picker_border)
+        self.dlg.pushButtonBKBorderColor.setStyleSheet("QWidget { background-color: %s}" % "white")
+        self.dlg.pushButtonFrameColor.clicked.connect(self.color_picker_Frame)
+        self.dlg.pushButtonFrameColor.setStyleSheet("QWidget { background-color: %s}" % "white")
+        self.dlg.pushButtonBGColor.clicked.connect(self.color_picker_BG)
+        self.dlg.pushButtonBGColor.setStyleSheet("QWidget { background-color: %s}" % "white")
+        self.dlg.pushButtonOLColor.clicked.connect(self.color_picker_OL)
+        self.dlg.pushButtonOLColor.setStyleSheet("QWidget { background-color: %s}" % "white")
+        #
+        self.dlg.loadSetting.clicked.connect(self.load_setting)
+
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -179,12 +213,33 @@ class bknqgis:
             pass
 
     def select_output_file(self):
-        filename = QFileDialog.getSaveFileName(self.dlg, "Select output file ","", '*.html')
+        filename = QFileDialog.getExistingDirectory(self.dlg, "Select output folder","/home", QFileDialog.ShowDirsOnly)
         self.dlg.lineEdit.setText(filename)
-
+    def select_output_settings(self):
+        filename = QFileDialog.getSaveFileName(self.dlg, "Select output setting file ","", '*.json')
+        self.dlg.lineEditSetting.setText(filename)
+    def GoogleChecked(self):
+        if self.dlg.GoogleCheckBox.isChecked():
+            self.dlg.lineEditGAPI.show()
+            self.dlg.lineEditZoom.show()
+            self.dlg.comboBoxMapType.show()
+            self.dlg.labelZoom.show()
+            self.dlg.labelMapType.show()
+            self.dlg.labelAPI.show()
+        else:
+            self.dlg.lineEditGAPI.hide()
+            self.dlg.lineEditZoom.hide()
+            self.dlg.comboBoxMapType.hide()
+            self.dlg.labelZoom.hide()
+            self.dlg.labelMapType.hide()
+            self.dlg.labelAPI.hide()
+    def alphaSliderChange(self):
+        self.dlg.lineEditAlpha.setText(str(self.dlg.alphaSlider.value()))
+    def alphaTextChange(self):
+        if self.dlg.lineEditAlpha.text():
+            self.dlg.alphaSlider.setValue(int(self.dlg.lineEditAlpha.text()))
     def deleteAllTable(self):
         self.dlg.tableWidget.setRowCount(0)
-
     def addRowTable(self):
         rowPosition = self.dlg.tableWidget.rowCount()
         self.dlg.tableWidget.insertRow(rowPosition)
@@ -208,25 +263,146 @@ class bknqgis:
         #selectedFieldIndex = self.dlg.comboBoxField.currentIndex()
         #selectedField = self.dlg.comboBoxField.itemData(selectedFieldIndex)
 
-        settings = {}
-        settings["layer"] = selectedLayer
-        settings["field"] = self.dlg.valueFieldText.text()
-        settings["outputFile"] = self.dlg.lineEdit.text()
-        settings["width"] = int(self.dlg.lineEditWidth.text())
-        settings["height"] = int(self.dlg.lineEditHeight.text())
-        settings["title"] = "Bokeh Test Map"
-        settings["hoverFields"] = []
+        self.settings["layer"] = selectedLayer
+        self.settings["field"] = self.dlg.valueFieldText.text()
+        self.settings["outputFile"] = self.dlg.lineEdit.text()
+        self.settings["width"] = int(self.dlg.lineEditWidth.text())
+        self.settings["height"] = int(self.dlg.lineEditHeight.text())
+        self.settings["ratioChecked"] = self.dlg.ratioCheckBox.isChecked()
+        self.settings["title"] = self.dlg.lineEditTitle.text()
+        self.settings["hoverFields"] = []
+        self.settings["alpha"] = 100 - self.dlg.alphaSlider.value()
+        self.settings["title"] = self.dlg.lineEditTitle.text()
+        #settings["outlineColor"] = self.dlg.comboBoxOutlineColor.currentText()
+        self.settings["outlineColor"] = self.dlg.pushButtonOLColor.text()
+        self.settings["outlineWidth"] = float(self.dlg.lineEditOutlineWidth.text())
+        self.settings["googleMapType"] = self.dlg.comboBoxMapType.currentText()
+        self.settings["zoomLevel"] = int(self.dlg.lineEditZoom.text())
+        self.settings["GoogleEnabled"] = self.dlg.GoogleCheckBox.isChecked()
+        self.settings["GMAPIKey"] = self.dlg.lineEditGAPI.text()
+        if self.dlg.radioButtonCDN.isChecked():
+            self.settings["BokehJS"] = "CDN"
+        if self.dlg.radioButtonINLINE.isChecked():
+            self.settings["BokehJS"] = "INLINE"
+        #settings["border_fill_alpha"] = "white"
+        self.settings["background_fill_color"] = self.dlg.pushButtonBGColor.text()
+        self.settings["background_fill_alpha"] = float(self.dlg.lineEditBGAlpha.text())
+        self.settings["outline_line_alpha"] = float(self.dlg.lineEditFrameAlpha.text())
+        self.settings["outline_line_width"] = int(self.dlg.lineEditPlotFrameWidth.text())
+        self.settings["outline_line_color"] = self.dlg.pushButtonFrameColor.text()
+        self.settings["border_fill_color"] = self.dlg.pushButtonBKBorderColor.text()
+        self.settings["min_border_left"] = int(self.dlg.leftMargin.text())
+        self.settings["min_border_right"] = int(self.dlg.rightMargin.text())
+        self.settings["min_border_top"] = int(self.dlg.topMargin.text())
+        self.settings["min_border_bottom"] = int(self.dlg.botMargin.text())
+        self.settings["toolbar_location"] = self.dlg.comboBoxToolPosition.currentText()
+        self.settings["sizing_mode"] = self.dlg.comboBoxSizingMode.currentText()
+
         for row in xrange(self.dlg.tableWidget.rowCount()):
             item0 = self.dlg.tableWidget.cellWidget(row, 0)
             item1 = self.dlg.tableWidget.item(row, 1)
-            settings["hoverFields"].append([str(item0.itemData(item0.currentIndex()).name()),str(item1.text())])
+            if item0:
+                self.settings["hoverFields"].append([str(item0.itemData(item0.currentIndex()).name()),item1.text()])
+            else:
+                item0 = self.dlg.tableWidget.item(row, 0)
+                self.settings["hoverFields"].append([item0.text(),item1.text()])
 
-        self.bkExport(settings)
+        self.bkExport(self.settings)
 
         messageBox = QMessageBox()
         messageBox.setWindowTitle( "Success" )
         messageBox.setText( "HTML Exported Successful")
         messageBox.exec_()
+    def color_picker_border(self):
+        colorDialog = QColorDialog()
+        colorDialog.setOption(QColorDialog.ShowAlphaChannel, True)
+        colorDialog.setOption(QColorDialog.DontUseNativeDialog, True)
+        color = colorDialog.getColor()
+        if color.isValid():
+            self.dlg.pushButtonBKBorderColor.setStyleSheet("QWidget { background-color: %s}" % color.name())
+            self.dlg.pushButtonBKBorderColor.setText(color.name())
+    def color_picker_Frame(self):
+        colorDialog = QColorDialog()
+        colorDialog.setOption(QColorDialog.ShowAlphaChannel, True)
+        colorDialog.setOption(QColorDialog.DontUseNativeDialog, True)
+        color = colorDialog.getColor()
+        if color.isValid():
+            self.dlg.pushButtonFrameColor.setStyleSheet("QWidget { background-color: %s}" % color.name())
+            self.dlg.pushButtonFrameColor.setText(color.name())
+    def color_picker_BG(self):
+        colorDialog = QColorDialog()
+        colorDialog.setOption(QColorDialog.ShowAlphaChannel, True)
+        colorDialog.setOption(QColorDialog.DontUseNativeDialog, True)
+        color = colorDialog.getColor()
+        if color.isValid():
+            self.dlg.pushButtonBGColor.setStyleSheet("QWidget { background-color: %s}" % color.name())
+            self.dlg.pushButtonBGColor.setText(color.name())
+    def color_picker_OL(self):
+        colorDialog = QColorDialog()
+        colorDialog.setOption(QColorDialog.ShowAlphaChannel, True)
+        colorDialog.setOption(QColorDialog.DontUseNativeDialog, True)
+        color = colorDialog.getColor()
+        if color.isValid():
+            self.dlg.pushButtonOLColor.setStyleSheet("QWidget { background-color: %s}" % color.name())
+            self.dlg.pushButtonOLColor.setText(color.name())
+
+    def load_setting(self):
+        filename = QFileDialog.getOpenFileName(self.dlg, "Select output file ","", '*.json')
+        if filename:
+            with open(filename, "r") as my_setting:
+                settings = json.load(my_setting)
+            #Basics:
+                self.dlg.comboBoxLayer.setCurrentIndex(self.dlg.comboBoxLayer.findText(settings["layer"]))
+                self.dlg.valueFieldText.setText(str(settings["field"]))
+                self.dlg.lineEdit.setText(str(settings["outputFile"]))
+                self.dlg.lineEditWidth.setText(str(settings["width"]))
+                self.dlg.lineEditHeight.setText(str(settings["height"]))
+                self.dlg.ratioCheckBox.setChecked(settings["ratioChecked"])
+                self.dlg.lineEditTitle.setText(str(settings["title"]))
+                self.dlg.lineEditOutlineWidth.setText(str(settings["outlineWidth"]))
+                self.dlg.alphaSlider.setValue(100 - int(settings["alpha"]))
+                self.dlg.pushButtonOLColor.setStyleSheet("QWidget { background-color: %s}" % settings["outlineColor"])
+                self.dlg.pushButtonOLColor.setText(settings["outlineColor"])
+                #Hover fields:
+                self.deleteAllTable()
+                for row in xrange(len(settings["hoverFields"])):
+                    self.dlg.tableWidget.insertRow(row)
+                    newComboBox = QComboBox()
+                    label1 = QTableWidgetItem()
+                    label1.setFlags(Qt.ItemIsEnabled)
+                    label1.setText( settings["hoverFields"][row][0])
+                    label2 = QTableWidgetItem()
+                    label2.setText( settings["hoverFields"][row][1])
+                    self.dlg.tableWidget.setItem(row, 0, label1)
+                    self.dlg.tableWidget.setItem(row, 1, label2)
+
+                #Advanced:
+                #Google Maps
+                self.dlg.GoogleCheckBox.setChecked(settings["GoogleEnabled"])
+                self.dlg.lineEditZoom.setText(str(settings["zoomLevel"]))
+                self.dlg.lineEditGAPI.setText(settings["GMAPIKey"])
+                self.dlg.comboBoxMapType.setCurrentIndex(self.dlg.comboBoxMapType.findText(settings["googleMapType"]))
+                #Other
+                self.dlg.lineEditBGAlpha.setText(str(settings["background_fill_alpha"]))
+                self.dlg.lineEditFrameAlpha.setText(str(settings["outline_line_alpha"]))
+                self.dlg.lineEditPlotFrameWidth.setText(str(settings["outline_line_width"]))
+                self.dlg.leftMargin.setText(str(settings["min_border_left"]))
+                self.dlg.rightMargin.setText(str(settings["min_border_right"]))
+                self.dlg.topMargin.setText(str(settings["min_border_top"]))
+                self.dlg.botMargin.setText(str(settings["min_border_bottom"]))
+                self.dlg.comboBoxToolPosition.setCurrentIndex(self.dlg.comboBoxToolPosition.findText(settings["toolbar_location"]))
+                self.dlg.comboBoxSizingMode.setCurrentIndex(self.dlg.comboBoxSizingMode.findText(settings["sizing_mode"]))
+                self.dlg.pushButtonFrameColor.setStyleSheet("QWidget { background-color: %s}" % settings["outline_line_color"])
+                self.dlg.pushButtonFrameColor.setText(settings["outline_line_color"])
+                self.dlg.pushButtonBKBorderColor.setStyleSheet("QWidget { background-color: %s}" % settings["border_fill_color"])
+                self.dlg.pushButtonBKBorderColor.setText(settings["border_fill_color"])
+                self.dlg.pushButtonBGColor.setStyleSheet("QWidget { background-color: %s}" % settings["background_fill_color"])
+                self.dlg.pushButtonBGColor.setText(settings["background_fill_color"])
+                if settings["BokehJS"] == "CDN":
+                    self.dlg.radioButtonCDN.setChecked(True)
+                    if settings["BokehJS"] == "INLINE":
+                        self.dlg.radioButtonINLINE.setChecked(True)
+
 
     def onLayerChange(self, index):
         self.deleteAllTable()
@@ -262,15 +438,6 @@ class bknqgis:
             else:
                 self.dlg.lineEditWidth.setText("")
             print (self.dlg.lineEditHeight.text(),self.dlg.lineEditWidth.text())
-
-    def onHtmlRBClicked(self):
-        self.dlg.htmlRB.setChecked(True)
-        self.dlg.jupyterRB.setChecked(False)
-        print "htmlClicked"
-    def onjupyterRBClicked(self):
-        self.dlg.htmlRB.setChecked(False)
-        self.dlg.jupyterRB.setChecked(True)
-        print "Jupyter"
 
     def gpd_bokeh(self,df):
         """Convert geometries from geopandas to bokeh format"""
@@ -346,7 +513,12 @@ class bknqgis:
             categories = renderer.categories()
             for i in xrange(len(categories)):
                 if categories[i].value():
-                    gdf2["class"][(gdf2["data"] == categories[i].value())] = i
+                    #print (categories[i].value(),categories[i].label())
+                    try:
+                        gdf2["class"][(gdf2["data"] == categories[i].value())] = i
+                    except:
+                        gdf2["class"][(gdf2["data"] == float(categories[i].value()))] = i
+
             colorPalette = [symbol.color().name() for symbol in renderer.symbols()]
             color_mapper = CategoricalColorMapper(factors=sorted(list(gdf2["class"].unique())), palette=colorPalette)
         elif renderer.type() == 'graduatedSymbol':
@@ -368,37 +540,62 @@ class bknqgis:
         ))
         for hField in settings["hoverFields"]:
             source.add(gdf2[hField[0]],name=hField[0])
+        if settings["GoogleEnabled"]:
+            print ("Enable Google")
+            map_options = GMapOptions(lat=np.nanmean([val for sublist in lats for val in sublist]),
+                          lng=np.nanmean([val for sublist in lons for val in sublist]), map_type=settings["googleMapType"], zoom=settings["zoomLevel"])
 
-        #plot_width=width, plot_height=height,
-        p = figure(
-            title=settings["title"], tools=TOOLS,plot_width=width, plot_height=height,
-            x_axis_location=None, y_axis_location=None
-        )
-        p.grid.grid_line_color = None
-        p.patches('x', 'y', source=source, fill_alpha=1, line_color="black", line_width=0.5,fill_color = {'field': 'category', 'transform': color_mapper},)
+            plot = GMapPlot(plot_width=width, plot_height=height,x_range=DataRange1d(), y_range=DataRange1d(), map_options=map_options,api_key = settings["GMAPIKey"])
 
+            source_patches = source
+            patches = Patches(xs='x', ys='y', fill_alpha=settings["alpha"]/100.0, line_color=settings["outlineColor"], line_width=settings["outlineWidth"],fill_color = {'field': 'category', 'transform': color_mapper})
+            patches_glyph = plot.add_glyph(source_patches, patches)
+            plot.add_tools(PanTool(), WheelZoomTool(), BoxSelectTool(), HoverTool())
+        else:
+            #plot_width=width, plot_height=height,
+            plot = figure(
+                title=settings["title"], tools=TOOLS,plot_width=width, plot_height=height,
+                x_axis_location=None, y_axis_location=None
+                )
+            plot.grid.grid_line_color = None
+            plot.patches('x', 'y', source=source, fill_alpha=settings["alpha"]/100.0, line_color=settings["outlineColor"], line_width=settings["outlineWidth"],fill_color = {'field': 'category', 'transform': color_mapper})
+
+        plot.border_fill_color = settings["border_fill_color"]
+        plot.background_fill_color = settings["background_fill_color"]
+        plot.background_fill_alpha = settings["background_fill_alpha"]
+        plot.outline_line_alpha = settings["outline_line_alpha"]
+        plot.outline_line_color = settings["outline_line_color"]
+        plot.outline_line_width = settings["outline_line_width"]
+        if settings["toolbar_location"] == "none":
+            plot.toolbar_location = None
+        else:
+            plot.toolbar_location = settings["toolbar_location"]
+        plot.min_border_left = settings["min_border_left"]
+        plot.min_border_right = settings["min_border_right"]
+        plot.min_border_top = settings["min_border_top"]
+        plot.min_border_bottom = settings["min_border_bottom"]
+        plot.sizing_mode = settings["sizing_mode"]
 
         if settings["hoverFields"]:
-            hover = p.select_one(HoverTool)
+            hover = plot.select_one(HoverTool)
             hover.point_policy = "follow_mouse"
             hover.tooltips = [
                 #(field, "@data")
                 #("(Long, Lat)", "($x, $y)"),
-            ]
+                ]
             for hField in settings["hoverFields"]:
                 temp = "@"+hField[0]
                 hover.tooltips.append((hField[1],temp))
 
-        if self.dlg.htmlRB.isChecked():
-            print ("HTML")
-            html = file_html(p, CDN, "my plot")
-            with open(settings["outputFile"], "w") as my_html:
-                my_html.write(html)
-        elif self.dlg.embedRB.isChecked():
-            print ("Embbed")
-            script, div = components(p)
-        elif self.dlg.jupyterRB.isChecked():
-            print ("Jupyter Notebook")
-            div = notebook_div(p)
-            with open(settings["outputFile"], "w") as my_div:
-                my_div.write(div)
+        if settings["BokehJS"] == "CDN":
+            print ("CDN")
+            html = file_html(plot, CDN, "my plot")
+        elif settings["BokehJS"] == "INLINE":
+            print ("INLINE")
+            html = file_html(plot, INLINE, "my plot")
+        with open(self.settings["outputFile"] + "/map.html", "w") as my_html:
+            my_html.write(html)
+        settings["layer"] = settings["layer"].name()
+        print settings
+        with open(self.settings["outputFile"] + "/settings.json", 'w') as fp:
+            json.dump(settings, fp)
