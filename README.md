@@ -1,6 +1,10 @@
 # bknqgis
 A QGIS Plugin that integrates Bokeh for web mapping
 
+
+Gallary
+------------
+Check this out: http://www.ziqi-li.info/bknqgis.html
 Installation
 ------------
 This plugin is built on Bokeh and GeoPandas, please make sure you have those two packages  or you could install by using `pip` or `easy_install`:
