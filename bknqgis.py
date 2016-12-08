@@ -300,8 +300,8 @@ class bknqgis:
             else:
                 item0 = self.dlg.tableWidget.item(row, 0)
                 self.settings["hoverFields"].append([item0.text(),item1.text()])
-
-        self.bkExport(self.settings)
+        if selectedLayer:
+            self.bkExport(self.settings)
 
         messageBox = QMessageBox()
         messageBox.setWindowTitle( "Success" )
@@ -403,14 +403,16 @@ class bknqgis:
     def onLayerChange(self, index):
         self.deleteAllTable()
         layer = self.dlg.comboBoxLayer.itemData(index) # gets selected layer
-        renderer = layer.rendererV2()
-        if renderer.usedAttributes():
-            self.dlg.valueFieldText.setText(renderer.usedAttributes()[0])
-        else:
-            self.dlg.valueFieldText.setText("")
-        ratio = layer.extent().width()/layer.extent().height()
-        self.dlg.lineEditWidth.setText("800")
-        self.dlg.lineEditHeight.setText(str(int(int(self.dlg.lineEditWidth.text())/ratio)))
+        print layer
+        if layer:
+            renderer = layer.rendererV2()
+            if renderer.usedAttributes():
+                self.dlg.valueFieldText.setText(renderer.usedAttributes()[0])
+            else:
+                self.dlg.valueFieldText.setText("")
+            ratio = layer.extent().width()/layer.extent().height()
+            self.dlg.lineEditWidth.setText("800")
+            self.dlg.lineEditHeight.setText(str(int(int(self.dlg.lineEditWidth.text())/ratio)))
 
     def onWidthChange(self):
         if self.dlg.ratioCheckBox.isChecked():
