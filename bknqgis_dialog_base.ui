@@ -121,7 +121,7 @@
        <x>2</x>
        <y>0</y>
        <width>551</width>
-       <height>316</height>
+       <height>291</height>
       </rect>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -175,7 +175,7 @@
           <property name="maximumSize">
            <size>
             <width>150</width>
-            <height>16777215</height>
+            <height>25</height>
            </size>
           </property>
          </widget>
@@ -211,21 +211,14 @@
             <height>20</height>
            </size>
           </property>
-          <property name="placeholderText">
-           <string>Type your title of the map.</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButton_4">
-          <property name="minimumSize">
+          <property name="maximumSize">
            <size>
-            <width>0</width>
-            <height>32</height>
+            <width>16777215</width>
+            <height>25</height>
            </size>
           </property>
-          <property name="text">
-           <string>Font</string>
+          <property name="placeholderText">
+           <string>Type your title of the map.</string>
           </property>
          </widget>
         </item>
@@ -267,7 +260,7 @@
           <property name="maximumSize">
            <size>
             <width>100</width>
-            <height>16777215</height>
+            <height>25</height>
            </size>
           </property>
          </widget>
@@ -296,7 +289,7 @@
           <property name="maximumSize">
            <size>
             <width>100</width>
-            <height>16777215</height>
+            <height>25</height>
            </size>
           </property>
          </widget>
@@ -412,7 +405,7 @@
           <property name="maximumSize">
            <size>
             <width>100</width>
-            <height>16777215</height>
+            <height>25</height>
            </size>
           </property>
          </widget>
@@ -455,7 +448,7 @@
           <property name="maximumSize">
            <size>
             <width>50</width>
-            <height>16777215</height>
+            <height>25</height>
            </size>
           </property>
          </widget>
@@ -520,6 +513,12 @@
             <height>20</height>
            </size>
           </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>25</height>
+           </size>
+          </property>
          </widget>
         </item>
         <item>
@@ -529,6 +528,12 @@
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>33</height>
+           </size>
           </property>
           <property name="text">
            <string>...</string>

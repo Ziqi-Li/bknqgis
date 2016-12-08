@@ -26,6 +26,7 @@ from qgis.core import QgsMessageLog
 import resources
 from bknqgis_dialog import bknqgisDialog
 import os.path
+import os
 #import pysal as ps
 import numpy as np
 import geopandas as gpd
@@ -73,7 +74,8 @@ class bknqgis:
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar(u'bknqgis')
         self.toolbar.setObjectName(u'bknqgis')
-        #
+
+        #UI presetting - Ziqi
         self.dlg.lineEditGAPI.hide()
         self.dlg.lineEditZoom.hide()
         self.dlg.comboBoxMapType.hide()
@@ -93,15 +95,13 @@ class bknqgis:
         self.dlg.botMargin.setValidator(QIntValidator())
         self.dlg.radioButtonCDN.setChecked(True)
         self.dlg.comboBoxMapType.addItems(["roadmap", "satellite", "hybrid","terrain"])
-        self.dlg.comboBoxToolPosition.addItems(["none","above","below","left","right"])
+        self.dlg.comboBoxToolPosition.addItems(["above","below","left","right","none"])
         self.dlg.comboBoxSizingMode.addItems(["fixed", "stretch_both", "scale_width", "scale_height", "scale_both"])
         self.dlg.lineEditZoom.setText("5")
         self.dlg.lineEditOutlineWidth.setText("0.5")
-        #self.dlg.lineEditGAPI.setText("AIzaSyBlVKPpKGaWkkrBgn3Di7mZ29ZYxmnHPcY")
-
         #Export path
         self.dlg.lineEdit.clear()
-        self.dlg.lineEdit.setText('/Users/Ziqi/Desktop/bokeh-map.html')
+        self.dlg.lineEdit.setText(os.path.expanduser('~'))
         self.dlg.outputBTN.clicked.connect(self.select_output_file)
         self.dlg.previewBTN.clicked.connect(self.preview)
         self.dlg.comboBoxLayer.activated.connect(self.onLayerChange)
@@ -213,11 +213,9 @@ class bknqgis:
             pass
 
     def select_output_file(self):
-        filename = QFileDialog.getExistingDirectory(self.dlg, "Select output folder","/home", QFileDialog.ShowDirsOnly)
+        filename = QFileDialog.getExistingDirectory(self.dlg, "Select output folder",os.path.expanduser('~'), QFileDialog.ShowDirsOnly)
         self.dlg.lineEdit.setText(filename)
-    def select_output_settings(self):
-        filename = QFileDialog.getSaveFileName(self.dlg, "Select output setting file ","", '*.json')
-        self.dlg.lineEditSetting.setText(filename)
+        #Toggle google map options when checking - Ziqi
     def GoogleChecked(self):
         if self.dlg.GoogleCheckBox.isChecked():
             self.dlg.lineEditGAPI.show()
@@ -238,6 +236,7 @@ class bknqgis:
     def alphaTextChange(self):
         if self.dlg.lineEditAlpha.text():
             self.dlg.alphaSlider.setValue(int(self.dlg.lineEditAlpha.text()))
+    #Table functions for hover
     def deleteAllTable(self):
         self.dlg.tableWidget.setRowCount(0)
     def addRowTable(self):
@@ -251,18 +250,15 @@ class bknqgis:
         label = QTableWidgetItem()
         self.dlg.tableWidget.setCellWidget(rowPosition, 0, newComboBox)
         self.dlg.tableWidget.setItem(rowPosition, 1, label)
-
     def delRowTable(self):
         rowPosition = self.dlg.tableWidget.rowCount()
         self.dlg.tableWidget.setRowCount(rowPosition - 1)
 
+    #Main function when clicking "export"
+    #The setting dictionary is used to store all setting parameters
     def preview(self):
-        file_path = "/Users/Ziqi/Desktop/map.html"
         selectedLayerIndex = self.dlg.comboBoxLayer.currentIndex()
         selectedLayer = self.dlg.comboBoxLayer.itemData(selectedLayerIndex)
-        #selectedFieldIndex = self.dlg.comboBoxField.currentIndex()
-        #selectedField = self.dlg.comboBoxField.itemData(selectedFieldIndex)
-
         self.settings["layer"] = selectedLayer
         self.settings["field"] = self.dlg.valueFieldText.text()
         self.settings["outputFile"] = self.dlg.lineEdit.text()
@@ -273,7 +269,6 @@ class bknqgis:
         self.settings["hoverFields"] = []
         self.settings["alpha"] = 100 - self.dlg.alphaSlider.value()
         self.settings["title"] = self.dlg.lineEditTitle.text()
-        #settings["outlineColor"] = self.dlg.comboBoxOutlineColor.currentText()
         self.settings["outlineColor"] = self.dlg.pushButtonOLColor.text()
         self.settings["outlineWidth"] = float(self.dlg.lineEditOutlineWidth.text())
         self.settings["googleMapType"] = self.dlg.comboBoxMapType.currentText()
@@ -284,7 +279,6 @@ class bknqgis:
             self.settings["BokehJS"] = "CDN"
         if self.dlg.radioButtonINLINE.isChecked():
             self.settings["BokehJS"] = "INLINE"
-        #settings["border_fill_alpha"] = "white"
         self.settings["background_fill_color"] = self.dlg.pushButtonBGColor.text()
         self.settings["background_fill_alpha"] = float(self.dlg.lineEditBGAlpha.text())
         self.settings["outline_line_alpha"] = float(self.dlg.lineEditFrameAlpha.text())
@@ -313,6 +307,7 @@ class bknqgis:
         messageBox.setWindowTitle( "Success" )
         messageBox.setText( "HTML Exported Successful")
         messageBox.exec_()
+    #Color pickers
     def color_picker_border(self):
         colorDialog = QColorDialog()
         colorDialog.setOption(QColorDialog.ShowAlphaChannel, True)
@@ -346,6 +341,7 @@ class bknqgis:
             self.dlg.pushButtonOLColor.setStyleSheet("QWidget { background-color: %s}" % color.name())
             self.dlg.pushButtonOLColor.setText(color.name())
 
+    #Load setting.json and update widgets
     def load_setting(self):
         filename = QFileDialog.getOpenFileName(self.dlg, "Select output file ","", '*.json')
         if filename:
@@ -470,6 +466,7 @@ class bknqgis:
 
         return lons,lats
 
+    #The main procesisng function
     def bkExport(self,settings):
     #layer = iface.legendInterface().layers()[0]
         layer = settings["layer"]
@@ -498,9 +495,6 @@ class bknqgis:
 
         lons, lats = self.gpd_bokeh(gdf2)
         data = list(gdf2["data"])
-        #map settings
-        #ratio = layer.extent().width()/layer.extent().height()
-        #height = int(layer.extent().height()*20)
         height = settings["height"]
         width = settings["width"]
         renderer = layer.rendererV2()
@@ -513,7 +507,6 @@ class bknqgis:
             categories = renderer.categories()
             for i in xrange(len(categories)):
                 if categories[i].value():
-                    #print (categories[i].value(),categories[i].label())
                     try:
                         gdf2["class"][(gdf2["data"] == categories[i].value())] = i
                     except:
@@ -529,7 +522,11 @@ class bknqgis:
             color_mapper = CategoricalColorMapper(factors=sorted(list(gdf2["class"].unique())), palette=colorPalette)
         else:
             print "otherSymbols"
-        TOOLS = "pan,wheel_zoom,box_zoom,reset,hover,save"
+
+        if settings["toolbar_location"] == "none":
+            TOOLS = ""
+        else:
+            TOOLS = "pan,wheel_zoom,box_zoom,reset,hover,save"
 
         colorClass  = list(gdf2["class"])
         source = ColumnDataSource(data=dict(

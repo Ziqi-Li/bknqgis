@@ -1,5 +1,5 @@
 # bknqgis
-A QGIS Plugin that integrates Bokeh for web mapping
+An interactive map maker in QGIS
 
 
 Gallary
@@ -7,13 +7,13 @@ Gallary
 Check this out: http://www.ziqi-li.info/bknqgis.html
 Installation
 ------------
-This plugin is built on Bokeh and GeoPandas, please make sure you have those two packages  or you could install by using `pip` or `easy_install`:
+This plugin is built upon Bokeh and GeoPandas, please make sure you have those two packages or you could install by using `pip` or `easy_install`. If you have multiple Pythons on your machine, please make sure you install those two packages to the Python QGIS uses.
 
 ```
 pip install bokeh
 pip install geopandas
 ```
-Then download the repo and put into   
+Then download the repo and put into the QGIS plugin folder.
 **Linux:**
 ```
 /share/qgis/python/plugins
