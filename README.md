@@ -11,9 +11,9 @@ Or this County-Level Voting Map Example: http://www.ziqi-li.info/vote.html
 
 UI
 ------------
-Basic Settings:
+Basic Settings:   
 ![Basic](img/Basic_UI.tiff)   
-Advanced Settings:
+Advanced Settings:   
 ![BK](img/Advanced.tiff)
 
 Installation
