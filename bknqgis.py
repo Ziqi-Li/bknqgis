@@ -20,6 +20,19 @@
  *                                                                         *
  ***************************************************************************/
 """
+import sys
+import os
+sys.path.append(os.path.join(sys.path[0],'numpy'))
+sys.path.append(os.path.join(sys.path[0],'geopandas'))
+sys.path.append(os.path.join(sys.path[0],'pandas'))
+sys.path.append(os.path.join(sys.path[0],'shapely'))
+sys.path.append(os.path.join(sys.path[0],'bokeh'))
+
+import numpy as np
+import geopandas as gpd
+import pandas as pd
+from shapely.geometry import shape
+
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from qgis.core import QgsMessageLog
@@ -27,11 +40,6 @@ import resources
 from bknqgis_dialog import bknqgisDialog
 import os.path
 import os
-#import pysal as ps
-import numpy as np
-import geopandas as gpd
-import pandas as pd
-from shapely.geometry import shape
 import json
 from bokeh.io import output_file, show
 from bokeh.models import ColumnDataSource,GeoJSONDataSource,CategoricalColorMapper,HoverTool,PanTool, WheelZoomTool, BoxSelectTool,GMapPlot, GMapOptions,DataRange1d

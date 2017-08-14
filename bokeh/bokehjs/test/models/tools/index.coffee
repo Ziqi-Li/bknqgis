@@ -1,0 +1,6 @@
+require "./actions"
+require "./inspectors"
+require "./gestures"
+require "./toolbar"
+require "./toolbar_base"
+require "./toolbar_box"

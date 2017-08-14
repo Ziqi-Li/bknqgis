@@ -1,0 +1,7 @@
+python-dateutil
+pytz
+numpy
+cython
+pytest
+pytest-cov
+flake8

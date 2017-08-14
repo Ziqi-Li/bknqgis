@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Test report for Bokeh {{ version }} {% if diff %}(against {{ diff }}){% endif %}</title>
+    </head>
+    <style>
+      .header > .ok {
+          color: green;
+      }
+      .header > .fail {
+          color: red;
+      }
+      .header > .skip {
+          color: yellow;
+      }
+      .thumbnail {
+          width: 200px;
+          height: auto;
+          display: inline-block;
+          vertical-align: top;
+          margin-bottom: 2em;
+      }
+    </style>
+    <body>
+      <h2><a name="top">Examples test report <small>(comparing against {{ diff_ref }})</small></a></h2>
+        <p><strong>Table of contents</strong></p>
+        <p>Image differences</p>
+        <ul>
+        {% for (example, failed, skipped) in entries %}
+            {% if not failed and not skipped and example.images_differ %}
+            <li> <a href="#{{ example.relpath_no_ext }}">{{ example.relpath_no_ext }}</a> </li>
+            {% endif %}
+        {% endfor %}
+        </ul>
+        <p>Failures</p>
+        <ul>
+        {% for (example, failed, skipped) in entries %}
+            {% if failed %}
+            <li> <a href="#{{ example.relpath_no_ext }}">{{ example.relpath_no_ext }}</a> </li>
+            {% endif %}
+        {% endfor %}
+        </ul>
+        <p>Successes</p>
+        <ul>
+        {% for (example, failed, skipped) in entries %}
+            {% if not failed and not skipped and not example.images_differ  %}
+            <li> <a href="#{{ example.relpath_no_ext }}">{{ example.relpath_no_ext }}</a> </li>
+            {% endif %}
+        {% endfor %}
+        </ul>
+        <p>Skipped</p>
+        <ul>
+        {% for (example, failed, skipped) in entries %}
+            {% if skipped %}
+            <li> <a href="#{{ example.relpath_no_ext }}">{{ example.relpath_no_ext }}</a> </li>
+            {% endif %}
+        {% endfor %}
+        </ul>
+        <h3>Results (current, diff, reference)</h3>
+          {% for (example, failed, skipped) in entries %}
+          <h5>
+            <a name="{{ example.relpath_no_ext }}">{{ example.relpath_no_ext }}</a>
+            <a href="#{{ example.relpath_no_ext }}">(link)</a>
+            <span class="header">
+                [{% if failed %}
+                <span class="fail">example failed to run</span>
+                {% elif skipped %}
+                <span class="skip">example skipped</span>
+                {% else %}
+                <span class="ok">example ran</span>
+                {% endif %}]
+            </span>
+            <a href="#top">Top</a>
+          </h5>
+            <div>
+              {% if not skipped and not example.no_js %}
+                <a href="{{ example.img_path_or_url }}"><img class="thumbnail" src="{{ example.img_path_or_url }}"></img></a>
+                {% if not example.no_diff %}
+                  {% if example.dimensions_differ %}
+                  <div class="thumbnail">Dimensions differ</div>
+                  {% elif example.images_differ %}
+                  <a href="{{ example.diff_path_or_url }}"><img class="thumbnail" src="{{ example.diff_path_or_url }}"></img></a>
+                  {% else %}
+                  <div class="thumbnail">No diff</div>
+                  {% endif %}
+                  {% if example.has_ref %}
+                  <a href="{{ example.ref_path_or_url }}"><img class="thumbnail" src="{{ example.ref_path_or_url }}"></img></a>
+                  {% else %}
+                  <div class="thumbnail">No ref</div>
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+            </div>
+          {% endfor %}
+    </body>
+</html>

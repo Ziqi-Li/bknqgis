@@ -1,0 +1,16 @@
+pytz
+numpy=1.10.4
+openpyxl
+xlsxwriter
+xlrd
+xlwt
+numexpr
+pytables
+html5lib
+lxml
+matplotlib
+jinja2
+bottleneck
+xarray
+s3fs
+beautifulsoup4

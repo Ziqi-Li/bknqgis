@@ -1,0 +1,32 @@
+- path: "models/file"
+  slow: ["choropleth.py"]
+  no_js: ["maps_cities.py", "maps.py", "trail.py"]
+  no_diff: ["graphs.py"]
+
+- path: "models/server"
+  type: server
+  # linked_tap appears without glyphs, need to resolve in phantomjs
+  # line_animate renders as a blur of lines in phantomjs (but not firefox)
+  no_js: ["linked_tap.py", "line_animate.py"]
+  # population has a property error that needs to be resolved
+  skip: ["population.py"]
+
+- path: "custom"
+
+- path: "plotting/file"
+  slow: ["choropleth.py"]
+  no_diff: ["jitter.py"]
+  no_js: ["gmap.py"]
+  skip: ["dynamic_map.py"]
+
+- path: "plotting/server"
+  type: server
+  # these examples have periodic callbacks so the screenshots aren't deterministic due to render time differences
+  no_diff: ["fourier_animted.py", "geojson_points.py", "line_animate.py", "line_animate_width.py", "animated.py"]
+  # timeout starts with an empty frame and isn't a useful example
+  no_js: ["timeout.py"]
+
+- path: "plotting/notebook"
+  skip: all
+
+- path: "howto/layouts"

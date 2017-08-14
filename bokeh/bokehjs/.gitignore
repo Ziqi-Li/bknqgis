@@ -1,0 +1,12 @@
+/build
+/node_modules
+/coverage
+.coverrun
+*~
+*.sw[opn]
+*.bak
+*#*
+*.#*
+*.DS_Store
+npm-debug.log
+/test/.generated_defaults/

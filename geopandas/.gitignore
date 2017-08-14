@@ -1,0 +1,11 @@
+.coverage
+*.pyc
+build
+dist
+doc/_build
+geopandas.egg-info
+geopandas/version.py
+*.py~
+doc/_static/world_*
+examples/nybb_*.zip
+.cache/
