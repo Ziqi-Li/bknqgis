@@ -9,15 +9,15 @@
 [general]
 name=bknqgis
 qgisMinimumVersion=2.0
-description=Link Bokeh to QGIS
+description=Making interactive web maps in QGIS through Bokeh
 version=0.1
 author=Ziqi Li
 email=liziqi1992@gmail.com
 
 about=Export QGIS layer and charts to web using Bokeh.
 
-tracker=https://github.com/c040120/bknqgis
-repository=https://github.com/c040120/bknqgis
+tracker=https://github.com/Ziqi-Li/bknqgis/issues
+repository=https://github.com/Ziqi-Li/bknqgis
 # End of mandatory metadata
 
 # Recommended items:
@@ -26,9 +26,9 @@ repository=https://github.com/c040120/bknqgis
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=
+tags= webmap,web,interactive,vector,html,export,layers
 
-homepage=
+homepage= https://github.com/Ziqi-Li/bknqgis
 category=Web
 icon=icon.png
 # experimental flag
