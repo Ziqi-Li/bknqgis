@@ -25,13 +25,14 @@ import os
 sys.path.append(os.path.join(sys.path[0],'numpy'))
 sys.path.append(os.path.join(sys.path[0],'geopandas'))
 sys.path.append(os.path.join(sys.path[0],'pandas'))
-sys.path.append(os.path.join(sys.path[0],'shapely'))
+sys.path.append(os.path.join(sys.path[0],'Shapely'))
 sys.path.append(os.path.join(sys.path[0],'bokeh'))
 
 import numpy as np
-import geopandas as gpd
+
 import pandas as pd
 from shapely.geometry import shape
+import geopandas as gpd
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
